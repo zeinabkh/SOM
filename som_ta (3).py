@@ -109,17 +109,17 @@ class SOM:
             # print(self.neuron_map)
             j = np.linalg.norm(pre_neuron_map - self.neuron_map)
             J.append(j)
-            if t % 10 ==0 :
+            if t % 10 ==0 or t == T-1 :
                  self.visualize(in_data,y)
                  print("epoch:", t, "lr:", self.lr, "J:", j)
             
-            self.R = self.R0 * (1-t / 1000)
+            self.R = self.R0 * (1-t / T)
             self.lr = self.lr0 *  (1-t / T)
+            if t > 800:
+                self.lr0 = 0.001
             self.js = j
             if j < error_threshold:
-                
                 break
-        self.js = j   
         return J
 
     def get_winner(self, x):
@@ -221,10 +221,15 @@ class SOM:
         plt.show()
 
 
-som = SOM([5,5,X[0].shape[0]],sigma =2.5,lr = 0.1)
-J = som.train(in_data=X, y = y, T=1500,error_threshold = 10**-8)
+som = SOM([4,4,X[0].shape[0]],sigma =2,lr = 0.1)
+J = som.train(in_data=X, y = y, T=1000,error_threshold = 10**-8)
 som.visualize(X,y,0)
 som.visualize(X,y,1)
+pure_in_c = 0
+for i in range(som.neuron_map.shape[0]):
+    for j in range(som.neuron_map.shape[1]):
+        pure_in_c += np.max(som.neuron_map_count[i,j])
+purity = pure_in_c / np.sum(som.neuron_map_count)
 plt.plot(J)
 plt.ylabel("difference between to weights set")
 plt.xlabel("epochs")
