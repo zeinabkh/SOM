@@ -115,8 +115,8 @@ class SOM:
             
             self.R = self.R0 * (1-t / T)
             self.lr = self.lr0 *  (1-t / T)
-            if t > 800:
-                self.lr0 = 0.001
+            if t > 600:
+                self.lr0 = 0.01
             self.js = j
             if j < error_threshold:
                 break
@@ -190,7 +190,16 @@ class SOM:
                 un = np.unique(self.neuron_map_count[i, j])
                 sum = np.sum(self.neuron_map_count[i, j])
                 purity = (max_n / sum) * 100
-                if max_n == 0:
+                if len(un) < 11:
+                    m = 0
+                    for inx, k in enumerate(self.neuron_map_count[i, j]):
+                        if k == max_n:
+                            neuron_map_color[i, j] = colors[inx]
+                            m += 1
+                    neuron_map_color[i, j] /= m
+
+                elif max_n == 0:
+
                     neuron_map_color[i, j] = [0, 0, 0]
                 elif purity >= 50:
                     neuron_map_color[i, j] = colors[max_index]
@@ -221,19 +230,51 @@ class SOM:
         plt.show()
 
 
+from sklearn.model_selection import train_test_split
+x_train,x_test,y_train, y_test = train_test_split(X,y,train_size=0.9)
 som = SOM([4,4,X[0].shape[0]],sigma =2,lr = 0.1)
-J = som.train(in_data=X, y = y, T=1000,error_threshold = 10**-8)
-som.visualize(X,y,0)
-som.visualize(X,y,1)
+J = som.train(in_data=x_train,y = y_train,T=500,error_threshold = 10**-8)
+som.visualize(x_train,y_train,0)
+som.visualize(x_train,y_train,1)
 pure_in_c = 0
 for i in range(som.neuron_map.shape[0]):
     for j in range(som.neuron_map.shape[1]):
         pure_in_c += np.max(som.neuron_map_count[i,j])
 purity = pure_in_c / np.sum(som.neuron_map_count)
+print(purity)
+pure_in_c = 0
+som.visualize(x_test,y_test,1)
+for i in range(som.neuron_map.shape[0]):
+    for j in range(som.neuron_map.shape[1]):
+        pure_in_c += np.max(som.neuron_map_count[i,j])
+purity = pure_in_c / np.sum(som.neuron_map_count)
+print(purity)
 plt.plot(J)
 plt.ylabel("difference between to weights set")
 plt.xlabel("epochs")
 plt.show()
 
-
+labels = {
+            "sad": 0,
+            "sleepy":1,
+            "wink": 2,
+            "glasses": 3,
+            "noglasses": 4,
+            "centerlight":5,
+            "rightlight": 6,
+            "leftlight": 7,
+            "happy": 8,
+            "normal": 9,
+            "surprised": 10
+        }
+f, ax = plt.subplots(2,6,figsize =(8,8))
+all_maps = np.zeros((11,som.neuron_map.shape[0],som.neuron_map.shape[1]))
+for xt,yt in zip(x_test,y_test):
+  wi,wj = som.get_winner(xt)
+  all_maps[labels[yt],wi,wj] = 1
+for i in range(11):
+  ax[np.unravel_index(i,shape=(2,6))[0],np.unravel_index(i,shape=(2,6))[1]].set_title(list(labels.keys())[i])
+  ax[np.unravel_index(i,shape=(2,6))[0],np.unravel_index(i,shape=(2,6))[1]].imshow(all_maps[i,:])
+ax[1,5].imshow(np.zeros((som.neuron_map.shape[0],som.neuron_map.shape[1])))
+plt.show()
 
